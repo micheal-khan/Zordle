@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
-import { BarChart3, CircleHelp, Delete, Lightbulb, Moon, Settings, Sun, Trophy, UserRound, X } from "@/components/icons";
+import { BarChart3, CalendarDays, CircleHelp, Delete, Lightbulb, Moon, Settings, Sun, Trophy, UserRound, X } from "@/components/icons";
 import { AuthGate } from "@/components/auth-gate";
 import { Leaderboard } from "@/components/leaderboard";
 import { PlayerProfile } from "@/components/player-profile";
@@ -267,25 +267,27 @@ export function Game() {
       </header>
 
       <section className="game-stage">
-        <div className="puzzle-label"><span>PUZZLE #{puzzleNo}</span><i /><span>{new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span></div>
-        <div className="message-slot" role="status">{message && <span>{message}</span>}</div>
-        <div className="board" aria-label="Guess board">
-          {Array.from({ length: ROWS }, (_, row) => {
-            const submitted = game.guesses[row];
-            const letters = submitted?.word ?? (row === game.guesses.length ? current : "");
-            return <div className={`board-row ${row === game.guesses.length && shake ? "shake" : ""}`} key={row}>
-              {Array.from({ length: COLS }, (_, col) => {
-                const letter = letters[col] ?? "";
-                const state: TileState = submitted ? submitted.evaluation[col] : letter ? "filled" : "empty";
-                return <div className={`tile ${state} ${submitted ? "reveal" : ""}`} style={{ animationDelay: submitted ? `${col * 90}ms` : undefined }} key={col} aria-label={letter ? `${letter}, ${state}` : "empty"}><span>{letter}</span></div>;
-              })}
-            </div>;
-          })}
-        </div>
+        <div className="game-card">
+          <div className="puzzle-label"><span>TODAY · #{puzzleNo}</span><i /><span>{new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></div>
+          <div className="message-slot" role="status">{message && <span>{message}</span>}</div>
+          <div className="board" aria-label="Guess board">
+            {Array.from({ length: ROWS }, (_, row) => {
+              const submitted = game.guesses[row];
+              const letters = submitted?.word ?? (row === game.guesses.length ? current : "");
+              return <div className={`board-row ${row === game.guesses.length && shake ? "shake" : ""}`} key={row}>
+                {Array.from({ length: COLS }, (_, col) => {
+                  const letter = letters[col] ?? "";
+                  const state: TileState = submitted ? submitted.evaluation[col] : letter ? "filled" : "empty";
+                  return <div className={`tile ${state} ${submitted ? "reveal" : ""}`} style={{ animationDelay: submitted ? `${col * 90}ms` : undefined }} key={col} aria-label={letter ? `${letter}, ${state}` : "empty"}><span>{letter}</span></div>;
+                })}
+              </div>;
+            })}
+          </div>
 
-        {game.guesses.length >= 2 && game.status === "playing" && <div className="hint-wrap">
-          {hint ? <p className="hint-text"><Lightbulb /> {hint}</p> : <button className="hint-button" onClick={getHint} disabled={hintBusy}><Lightbulb /> {hintBusy ? "Thinking…" : "Need a gentle nudge?"}</button>}
-        </div>}
+          <div className="hint-wrap">
+            {game.guesses.length >= 2 && game.status === "playing" && (hint ? <p className="hint-text"><Lightbulb /> {hint}</p> : <button className="hint-button" onClick={getHint} disabled={hintBusy}><Lightbulb /> {hintBusy ? "Thinking…" : "Need a gentle nudge?"}</button>)}
+          </div>
+        </div>
 
         <div className="keyboard" aria-label="On-screen keyboard">
           {KEYS.map((row, rowIndex) => <div className="key-row" key={row}>
@@ -297,6 +299,13 @@ export function Game() {
       </section>
 
       <footer><span>A quiet ritual for curious minds.</span><span>New puzzle every midnight UTC</span></footer>
+
+      <nav className="mobile-dock" aria-label="Main navigation">
+        <button className={!modal ? "active" : ""} onClick={() => setModal(null)}><CalendarDays /><span>Today</span></button>
+        <button className={modal === "stats" ? "active" : ""} onClick={() => setModal("stats")}><BarChart3 /><span>Stats</span></button>
+        <button className={modal === "leaderboard" ? "active" : ""} onClick={() => setModal("leaderboard")}><Trophy /><span>Leaders</span></button>
+        <button className={modal === "profile" ? "active" : ""} onClick={() => setModal("profile")}><UserRound /><span>Profile</span></button>
+      </nav>
 
       {modal && <Modal wide={modal === "profile" || modal === "leaderboard"} onClose={() => setModal(null)}>
         {modal === "help" && <Help onDone={() => { localStorage.setItem("zordle:welcomed", "1"); setModal(null); }} />}
@@ -315,7 +324,7 @@ function Modal({ children, onClose, wide = false }: { children: React.ReactNode;
     window.addEventListener("keydown", listener); return () => window.removeEventListener("keydown", listener);
   }, [onClose]);
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section className={`modal ${wide ? "modal-wide" : ""}`} role="dialog" aria-modal="true"><button className="modal-close" aria-label="Close" onClick={onClose}><X /></button>{children}</section>
+    <section className={`modal ${wide ? "modal-wide" : ""}`} role="dialog" aria-modal="true"><span className="sheet-handle" aria-hidden="true" /><button className="modal-close" aria-label="Close" onClick={onClose}><X /></button>{children}</section>
   </div>;
 }
 

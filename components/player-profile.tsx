@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { CalendarDays, Flame, LogOut, Medal } from "@/components/icons";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
@@ -79,7 +79,7 @@ export function PlayerProfile({ user, onSignOut }: { user: User; onSignOut: () =
       </div>
 
       <div className="calendar-section">
-        <div className="section-heading"><div><CalendarDays /><span><strong>Your year in words</strong><small>{results.length} daily puzzles recorded</small></span></div><span className="calendar-year">LAST 12 MONTHS</span></div>
+        <div className="section-heading"><div><CalendarDays /><span><strong>Your year in words</strong><small>{results.length} daily puzzles recorded</small></span></div><span className="calendar-year">RECENT ACTIVITY</span></div>
         <ActivityCalendar results={results} />
       </div>
 
@@ -101,6 +101,7 @@ function ProfileStat({ value, label, icon }: { value: string | number; label: st
 }
 
 function ActivityCalendar({ results }: { results: Result[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { days, monthLabels } = useMemo(() => {
     const byDate = new Map(results.map((result) => [result.puzzle_date, result]));
     const end = new Date();
@@ -125,18 +126,25 @@ function ActivityCalendar({ results }: { results: Result[] }) {
     return { days: calendarDays, monthLabels: labels };
   }, [results]);
 
-  return <div className="calendar-scroll">
-    <div className="calendar-months">{monthLabels.map((label, index) => <span key={index}>{label}</span>)}</div>
-    <div className="calendar-layout">
-      <div className="calendar-weekdays"><span>Mon</span><span>Wed</span><span>Fri</span></div>
-      <div className="activity-calendar">
-        {days.map(({ date, result, future }) => {
-          const level = !result ? "empty" : !result.won ? "missed" : result.attempts <= 2 ? "level-4" : result.attempts === 3 ? "level-3" : result.attempts === 4 ? "level-2" : "level-1";
-          const title = future ? date : result ? `${date}: ${result.won ? `Solved in ${result.attempts}` : "Missed"}` : `${date}: No puzzle recorded`;
-          return <i className={`${level} ${future ? "future" : ""}`} title={title} aria-label={title} key={date} />;
-        })}
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    if (scroller) scroller.scrollLeft = scroller.scrollWidth;
+  }, [days]);
+
+  return <>
+    <div className="calendar-scroll" ref={scrollRef} tabIndex={0} aria-label="Daily puzzle activity for the last twelve months">
+      <div className="calendar-months">{monthLabels.map((label, index) => <span key={index}>{label}</span>)}</div>
+      <div className="calendar-layout">
+        <div className="calendar-weekdays"><span>Mon</span><span>Wed</span><span>Fri</span></div>
+        <div className="activity-calendar">
+          {days.map(({ date, result, future }) => {
+            const level = !result ? "empty" : !result.won ? "missed" : result.attempts <= 2 ? "level-4" : result.attempts === 3 ? "level-3" : result.attempts === 4 ? "level-2" : "level-1";
+            const title = future ? date : result ? `${date}: ${result.won ? `Solved in ${result.attempts}` : "Missed"}` : `${date}: No puzzle recorded`;
+            return <i className={`${level} ${future ? "future" : ""}`} title={title} aria-label={title} key={date} />;
+          })}
+        </div>
       </div>
     </div>
     <div className="calendar-legend"><span>Missed</span><i className="missed" /><span>Less</span><i className="level-1" /><i className="level-2" /><i className="level-3" /><i className="level-4" /><span>Fewer guesses</span></div>
-  </div>;
+  </>;
 }
